@@ -1,0 +1,1 @@
+A simple peer-to-peer chat application, using a server-full solution in the form of a central tracker and a client
