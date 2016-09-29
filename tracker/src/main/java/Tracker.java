@@ -80,6 +80,7 @@ public class Tracker implements AutoCloseable {
 			}
 		}
 	}
+
 	protected class MatchThread extends Thread {
 		int pairs = 0;
 
@@ -87,13 +88,16 @@ public class Tracker implements AutoCloseable {
 			setName("MatchThread");
 		}
 
-		public Thread pairThread(ClientConnection conn1, ClientConnection conn2) {
-			
+		public Thread pairThread(ClientConnection server, ClientConnection client) {
 			return new Thread(() -> {
 				logger.log("Starting to pair...");
 				// TODO send the data for the two clients to each other
+				// send "listen" to server
+				// wait for it to respond with the port it's listening on
+				// send "connect" to the other
+				// send the 1st connections info
 				// NOTE this single thread sends conn1 to conn2 and visa versa
-			}, "PairThread#" + (pairs++));
+			}, "PairThread#" + pairs++);
 		}
 
 		@Override
@@ -209,20 +213,19 @@ public class Tracker implements AutoCloseable {
 		 */
 		@Override
 		public void run() {
-			int port;
-			String msg;
-			try {
-				// It's listening for a single string, an int, the port that the
-				// client is listening on
-				msg = in.readLine();
-				port = Integer.parseInt(msg);
-			} catch (IOException ioe) {
-				throw new RuntimeException("Error reading client message", ioe);
-			} catch (RuntimeException re) {
-				throw new RuntimeException("Error parsing message from client", re);
-			}
-			this.port = port;
-			Tracker.this.clients.push(this);
+
+			/*
+			 * int port; String msg; try { // It's listening for a single
+			 * string, an int, the port that the // client is listening on msg =
+			 * in.readLine(); port = Integer.parseInt(msg); } catch (IOException
+			 * ioe) { throw new RuntimeException("Error reading client message",
+			 * ioe); } catch (RuntimeException re) { throw new
+			 * RuntimeException("Error parsing message from client", re); }
+			 * this.port = port;
+			 */
+			// it used to do a bunch of junk but now it just adds itself to a
+			// big list of clients
+			clients.push(this);
 		}
 
 		@Override
@@ -375,21 +378,21 @@ public class Tracker implements AutoCloseable {
 				stop();
 				return "Tracker stopped gracefully";
 			}));
-			tasks.put("list", new Task("List the current open connections", () -> clients.stream()
-					.map(
-							(client) -> client.toString()).reduce(
-									(String s1, String s2) -> s1 + "\n" + s2).orElse("No connections")));
+			tasks.put("list",
+					new Task("List the current open connections",
+							() -> clients.stream().map((client) -> client.toString())
+									.reduce((String s1, String s2) -> s1 + "\n" + s2).orElse("No connections")));
 			while (isRunning()) {
 				String line;
-				try{
+				try {
 					line = scan.nextLine();
-				}
-				catch(NoSuchElementException nsee){
+				} catch (NoSuchElementException nsee) {
 					System.out.println("Got EOF");
 					line = "exit";
 				}
-				if(line.equals(""))
+				if (line.equals("")) {
 					continue;
+				}
 				Task task = tasks.get(line);
 				System.out.println(task == null ? "Sorry I don't know what that means" : task.call().get());
 			}
