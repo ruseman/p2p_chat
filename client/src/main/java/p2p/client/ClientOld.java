@@ -7,6 +7,8 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -91,20 +93,58 @@ public class Client implements AutoCloseable, Runnable {
 	}
 
 	/*
-	 * a connection to a remote client just a socket and a few helper methods
+	 * a connection to a remote client.
 	 */
 	protected class RemoteConnection {
+		
+		
 		public final Socket			socket;
+		private Queue<String> incomingMessages;
 		public final PrintStream	out;
-
 		public final BufferedReader	in;
 		@Expose
 		public String				host;
-
+		
+		private Thread listenThread = new ListenThread();
+		private Thread printThread = new PrintThread();
+		
+		/*
+		 * print the incoming messages to stdout
+		 */
+		private class PrintThread extends Thread{
+			public void run(){
+				while(isRunning()){
+					String msg;
+					while(!incomingMessages.isEmpty()){
+						msg = incomingMessages.poll();
+						System.out.println(msg);
+					}
+				}
+			}
+		}
+		
+		/*
+		 * read lines from remote, and add them to incomingmessages
+		 */
+		private class ListenThread extends Thread{
+			public void run(){
+				while(isRunning()){
+					String msg;
+					try {
+						msg = in.readLine();
+					} catch (IOException e) {
+						throw new RuntimeException("Error reading message from remote", e);
+					}
+					incomingMessages.add(msg);
+				}
+			}
+		}
+		
 		@Expose
 		public int					port;
 
 		public RemoteConnection(Socket remoteSocket) {
+			incomingMessages = new ConcurrentLinkedQueue<>();
 			socket = remoteSocket;
 			host = socket.getInetAddress().getHostAddress();
 			port = socket.getPort();
@@ -114,6 +154,13 @@ public class Client implements AutoCloseable, Runnable {
 			} catch (IOException ioe) {
 				throw new RuntimeException("error openning streams", ioe);
 			}
+		}
+		
+		/*
+		 * read stdin while program is running, and send to remote
+		 */
+		public void run(){
+			// TODO
 		}
 
 		@Override

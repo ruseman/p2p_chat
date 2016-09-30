@@ -1,3 +1,4 @@
+package p2p.tracker;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -31,7 +32,7 @@ import com.google.gson.annotations.Expose;
  * they're listening on. The Tracker pairs clients as they join, sending them
  * the IP and port of their mate, and the Clients connect as is appropriate.
  */
-public class Tracker implements AutoCloseable {
+public class TrackerOld implements AutoCloseable {
 	/*
 	 * Configuration for a tracker, typically loaded from a .json file
 	 */
@@ -249,7 +250,7 @@ public class Tracker implements AutoCloseable {
 	 * main bruh
 	 */
 	public static void main(String... args) {
-		try (Tracker tracker = new Tracker(getConfig(Paths.get(CONFIG_PATH)))) {
+		try (TrackerOld tracker = new TrackerOld(getConfig(Paths.get(CONFIG_PATH)))) {
 			tracker.run();
 		} catch (RuntimeException re) {
 			re.printStackTrace();
@@ -320,7 +321,7 @@ public class Tracker implements AutoCloseable {
 	/*
 	 * Initialize new Tracker with given configuration
 	 */
-	public Tracker(Config config) {
+	public TrackerOld(Config config) {
 		this.config = config;
 		try {
 			socket = new ServerSocket(config.port);
@@ -334,7 +335,6 @@ public class Tracker implements AutoCloseable {
 
 	/*
 	 * (non-Javadoc)
-	 *
 	 * @see java.lang.AutoCloseable#close() Close the Tracker, free it's
 	 * resources gracefully
 	 */
@@ -402,12 +402,11 @@ public class Tracker implements AutoCloseable {
 
 	/*
 	 * (non-Javadoc)
-	 *
 	 * @see java.lang.Object#toString()
 	 */
 	@Override
 	public String toString() {
-		return gson.toJson(this, Tracker.class);
+		return gson.toJson(this, TrackerOld.class);
 	}
 
 	protected synchronized void stop() {
@@ -435,7 +434,7 @@ final class ClientConnectionThread extends Thread {
 	/*
 	 * Create a ClientConnectionThread from a ClientConnection
 	 */
-	public ClientConnectionThread(Tracker.ClientConnection conn) {
+	public ClientConnectionThread(TrackerOld.ClientConnection conn) {
 		super(conn);
 		connection = conn.toString();
 		setName("ClientConnectionThread#" + count);

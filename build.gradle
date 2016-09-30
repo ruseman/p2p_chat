@@ -1,7 +1,9 @@
 subprojects{
 	apply plugin: 'java'
-	apply plugin: 'application'
 	apply plugin: 'eclipse'
+
+	sourceCompatibility=1.8
+	targetCompatibility=1.8
 
 	repositories {
 	    mavenCentral()
@@ -11,11 +13,24 @@ subprojects{
 		compile group: 'com.google.code.gson', name: 'gson', version: '2.7' 
 	}
 
-	sourceCompatibility=1.8
-	targetCompatibility=1.8
+}
 
+// configuration for client and tracker
+configure(subprojects.findAll{it.name != 'common'}){
+	dependencies{
+		compile project(':common')
+	}
+	apply plugin: 'application'
 	run{
 		standardInput = System.in
 		standardOutput = System.out
 	}
+}
+
+project(':client'){
+	mainClassName='p2p.client.Client'
+}
+
+project(':server'){
+	mainClassName='p2p.server.Server'
 }
