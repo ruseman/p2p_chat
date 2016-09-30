@@ -14,10 +14,6 @@ import java.net.Socket;
 public class Client implements AutoCloseable {
 	private Socket				socket;
 	public final PrintStream	out;
-	
-	public InetAddress getInetAddress(){
-		return socket.getInetAddress();
-	}
 
 	public final BufferedReader	in;
 
@@ -38,6 +34,10 @@ public class Client implements AutoCloseable {
 		} catch (IOException ioe) {
 			throw new RuntimeException("Failed to close Client", ioe);
 		}
+	}
+
+	public InetAddress getInetAddress() {
+		return socket.getInetAddress();
 	}
 
 	@Override

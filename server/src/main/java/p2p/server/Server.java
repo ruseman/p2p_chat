@@ -82,8 +82,8 @@ public class Server implements AutoCloseable {
 				try {
 					socket = Server.this.socket.accept();
 					client = new Client(socket);
-				}catch (SocketException se){
-					if(socket != null && !socket.isClosed())
+				} catch (SocketException se) {
+					if (socket != null && !socket.isClosed())
 						throw new RuntimeException(se);
 				} catch (IOException ioe) {
 					throw new RuntimeException(ioe);
@@ -212,7 +212,7 @@ public class Server implements AutoCloseable {
 	public synchronized boolean isRunning() {
 		return running;
 	}
-	
+
 	/**
 	 * Start the Server's threads, and then launch an interactive REPL
 	 */
@@ -221,9 +221,10 @@ public class Server implements AutoCloseable {
 		matchThread.start();
 		listenThread.start();
 		// set thread exception handler
-		Thread.currentThread().setUncaughtExceptionHandler((thread, exception)->{
+		Thread.currentThread().setUncaughtExceptionHandler((thread, exception) -> {
 			exception.printStackTrace(System.err);
-			System.out.println("A critical error has occurred in the " + thread.getName() + " thread, check stderr for details");
+			System.out.println(
+					"A critical error has occurred in the " + thread.getName() + " thread, check stderr for details");
 			stop();
 		});
 		// the tasks are initialized here
@@ -233,8 +234,8 @@ public class Server implements AutoCloseable {
 								.map((entry) -> entry.getKey() + "\t" + entry.getValue().helpString)
 								.reduce((a, b) -> a + "\n" + b).get()));
 		tasks.put("stop", new Task("stop the server politely", this::stop));
-		tasks.put("list", new Task("list the currently waiting clients",
-				() -> clients.stream().map(Client::toString).reduce((a, b) -> a + "\n" + b).orElse("No clients are connected")));
+		tasks.put("list", new Task("list the currently waiting clients", () -> clients.stream().map(Client::toString)
+				.reduce((a, b) -> a + "\n" + b).orElse("No clients are connected")));
 		try (Scanner scan = new Scanner(System.in)) {
 			scan.useDelimiter(System.lineSeparator());
 			System.out.println(
