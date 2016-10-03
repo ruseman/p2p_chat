@@ -28,7 +28,7 @@ configure(subprojects.findAll{it.name != 'common'}){
 }
 
 project(':client'){
-	mainClassName='p2p.client.Client'
+	mainClassName='p2p.client.SimpleClient'
 }
 
 project(':server'){

@@ -1,51 +1,115 @@
 package p2p.client;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Supplier;
 
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JTextField;
+import p2p.common.Logger;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.annotations.Expose;
-
-import p2p.client.swing.ClientFrame;
-
-public class Client implements AutoCloseable {
-	public class MatchServer {
-		@Expose
-		public String	host;
-		@Expose
-		public Integer	port;
-
-		public MatchServer(String host, Integer port) {
-			this.host = host;
-			this.port = port;
+public class Client extends Thread implements AutoCloseable {
+	protected class ListenThread extends Thread {
+		public ListenThread() {
+			setName("ListenThread");
 		}
 
 		@Override
-		public String toString() {
-			return gson.toJson(this);
+		public void run() {
+			// TODO listen for messages from foreignclient, adding lines as they
+			// come to incomingMessages
 		}
 	}
 
-	public static final Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
+	protected class SendThread extends Thread {
+		public SendThread() {
+			setName("SendThread");
+		}
 
-	public static void main(String[] args) {
-		try (Client client = new Client()) {
-			client.run();
+		@Override
+		public void run() {
+			// TODO go through the outgoingmessages sending them to
+			// foreighClient as they go
 		}
 	}
 
-	protected ClientFrame	frame;
+	private class RemoteCaller extends RemoteHandler {
 
-	protected ServerSocket	socket;
+		@Override
+		public void close() {
+			// TODO Auto-generated method stub
+		}
 
-	public Client() {
+		@Override
+		public Remote get() {
+			// TODO needs to wait for the server to send it a line with the
+			// RemoteInfo in it, and then connect to that remote, returning a
+			// Remote object from the socket
+			return null;
+		}
+	}
 
+	private abstract class RemoteHandler implements Supplier<Remote>, Closeable {
+		@Override
+		public abstract void close();
+
+		@Override
+		public abstract Remote get();
+	}
+
+	private class RemoteListener extends RemoteHandler {
+		private ServerSocket listen = null;
+
+		@Override
+		public void close() {
+			try {
+				if (listen != null) {
+					listen.close();
+				}
+			} catch (IOException ioe) {
+				throw new RuntimeException(ioe);
+			}
+		}
+
+		@Override
+		public Remote get() {
+			Socket foreignClientPort;
+			// open a serversocket, then tell the server the ip it's listening
+			// on, then accept the first socket it gets and return a Remote with
+			// that socket
+			try {
+				listen = new ServerSocket(0);
+				logger.info("Listening on port #" + listen.getLocalPort());
+				logger.info("sending port to server");
+				server.out.println(listen.getLocalPort());
+				foreignClientPort = listen.accept();
+				return new Remote(foreignClientPort);
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		}
+	}
+
+	public final Thread				listenThread		= new ListenThread(), sendThread = new SendThread();
+
+	protected final Queue<String>	incomingMessages	= new ConcurrentLinkedQueue<>();
+
+	protected final Queue<String>	outgoingMessages	= new ConcurrentLinkedQueue<>();
+
+	public final ServerInfo			serverInfo;
+
+	public final Logger				logger				= new Logger(System.out);
+
+	private boolean					running				= true;
+
+	private Remote					server				= null, foreignClient = null;
+
+	public Client(ServerInfo serverInfo, UncaughtExceptionHandler exceptionHandler) {
+		this.serverInfo = serverInfo;
+		setName("ClientThread");
+		setUncaughtExceptionHandler(exceptionHandler);
 	}
 
 	@Override
@@ -53,45 +117,49 @@ public class Client implements AutoCloseable {
 
 	}
 
-	/**
-	 * @return the MatchServer or null if the user wants to quit
-	 */
-	public MatchServer getTrackerDialog() {
-		JTextField hostField = new JTextField();
-		JTextField portField = new JTextField();
-		JComponent[] inputs = new JComponent[] { new JLabel("Host"), hostField, new JLabel("Port"), portField };
-		String alert = null;
-		Supplier<Integer> confirmDialog = () -> JOptionPane.showConfirmDialog(frame, inputs, "Server configuration",
-				JOptionPane.PLAIN_MESSAGE);
-		do {
-			int result = confirmDialog.get();
-			switch (result) {
-			case JOptionPane.CLOSED_OPTION:
-
-				return null;
-			case JOptionPane.OK_OPTION:
-				try {
-					return new MatchServer(hostField.getText(), Integer.parseInt(portField.getText()));
-				} catch (Exception e) {
-					if (hostField.getText().isEmpty() || portField.getText().isEmpty()) {
-						alert = "Please provide a matchs erver host and port";
-					} else {
-						alert = "Malformed input";
-					}
-				}
-				break;
-			default:
-				alert = "No match server entered";
-				break;
-			}
-
-			if (alert != null) {
-				JOptionPane.showMessageDialog(frame, alert, "Alert", JOptionPane.ERROR_MESSAGE);
-			}
-		} while (true);
+	public boolean isRunning() {
+		return running;
 	}
 
-	private void run() {
-		System.out.println(getTrackerDialog());
+	public synchronized void requestStop() {
+		running = false;
+	}
+
+	@Override
+	public void run() {
+		RemoteHandler remoteHandler = null;
+		try {
+			logger.info("Client is starting...");
+			logger.info("connecting to server...");
+			server = new Remote(serverInfo);
+			logger.info("Server connection established: " + server.toString());
+			String mode = server.in.readLine();
+			logger.info("Got mode " + mode + " from server");
+			switch (mode) {
+			case "CALL":
+				remoteHandler = new RemoteCaller();
+				break;
+			case "LISTEN":
+				remoteHandler = new RemoteListener();
+				break;
+			default:
+				throw new RuntimeException("Invalid mode string from server");
+			}
+			foreignClient = remoteHandler.get();
+		} catch (IOException ioe) {
+			throw new RuntimeException(ioe);
+		} finally {
+			if (remoteHandler != null) {
+				remoteHandler.close();
+			}
+		}
+		// start delegate threads TODO
+		sendThread.start();
+		listenThread.start();
+	}
+
+	@Override
+	public final void start() {
+		super.start();
 	}
 }

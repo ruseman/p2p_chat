@@ -3,7 +3,6 @@ package p2p.server;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
@@ -76,25 +75,14 @@ public class Server implements AutoCloseable {
 	private class ListenRunnable implements Runnable {
 		@Override
 		public void run() {
-			Client client = null;
-			Socket socket = null;
+			Client client;
+			Socket socket;
 			while (isRunning()) {
 				try {
 					socket = Server.this.socket.accept();
 					client = new Client(socket);
-				} catch (SocketException se) {
-					if (socket != null && !socket.isClosed())
-						throw new RuntimeException(se);
-				} catch (IOException ioe) {
-					throw new RuntimeException(ioe);
-				} finally {
-					if (socket != null) {
-						try {
-							socket.close();
-						} catch (IOException e) {
-							throw new RuntimeException(e);
-						}
-					}
+				} catch (IOException se) {
+					throw new RuntimeException(se);
 				}
 				if (client != null) {
 					clients.add(client);
@@ -136,10 +124,16 @@ public class Server implements AutoCloseable {
 			try {
 				int port;
 				server.out.println("LISTEN");
+				client.out.println("CALL");
 				port = Integer.parseInt(server.in.readLine());
 				serverConfig = new RemoteClientConfiguration(server.getInetAddress().getHostAddress(), port);
-				client.out.println("CALL");
 				client.out.println(serverConfig.toString());
+			} catch (NumberFormatException nfe) {
+				// the server failed at it's job, so we close the server
+				// connection, and put the client back in the queue
+				server.close();
+				clients.add(client);
+				throw new RuntimeException(nfe);
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			} finally {
