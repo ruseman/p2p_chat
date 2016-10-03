@@ -8,79 +8,23 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.Supplier;
 
+import p2p.common.Host;
 import p2p.common.Logger;
-import p2p.common.RemoteClientConfiguration;
+import p2p.common.Remote;
+import p2p.server.task.Task;
 
 public class Server implements AutoCloseable {
-
-	protected class SimpleTask extends Task {
-		private Runnable runnable;
-
-		public SimpleTask(String docstring, Runnable run) {
-			super(docstring);
-			runnable = run;
-		}
-
-		@Override
-		public void run() {
-			runnable.run();
-		}
-	}
-
-	protected class Task implements Runnable {
-		public final String	helpString;
-
-		private Runnable	runnable;
-
-		/**
-		 * Construct a new task from a help string and a runnable
-		 *
-		 * @param helpString
-		 *            string of help text
-		 * @param runnable
-		 *            runnable
-		 */
-		public Task(String helpString, Runnable runnable) {
-			this(helpString);
-			this.runnable = runnable;
-		}
-
-		/**
-		 * Construct a new task from a help string and a supplier The output of
-		 * the supplier is printed to System.out
-		 *
-		 * @param helpString
-		 *            help string
-		 * @param supplier
-		 *            supplier
-		 */
-		public Task(String helpString, Supplier<String> supplier) {
-			this(helpString, () -> {
-				System.out.println(supplier.get());
-			});
-		}
-
-		protected Task(String helpString) {
-			this.helpString = helpString;
-		}
-
-		@Override
-		public void run() {
-			runnable.run();
-		}
-	}
 
 	private class ListenRunnable implements Runnable {
 		@Override
 		public void run() {
-			Client client;
+			Remote client;
 			Socket socket;
 			while (isRunning()) {
 				try {
 					socket = Server.this.socket.accept();
-					client = new Client(socket);
+					client = new Remote(socket);
 				} catch (IOException se) {
 					throw new RuntimeException(se);
 				}
@@ -91,54 +35,66 @@ public class Server implements AutoCloseable {
 		}
 	}
 
+	/*
+	 * Runnable object to perform matches
+	 * Only one of these should be run at a given time, it counts the number of pairs, and it creates the PairRunnables with the two pairs once there are 2 or more remotes waiting around
+	 */
 	private class MatchRunnable implements Runnable {
 		@Override
 		public void run() {
-			Client c1, c2;
+			logger.info("MatchRunnable is running");
+			Remote c1, c2;
 			int pairs = 0;
 			while (isRunning()) {
 				if (clients.size() >= 2) {
 					c1 = clients.remove();
 					c2 = clients.remove();
-
-					Thread pairThread = new Thread(new PairRunnable(c1, c2), "PairThread#" + pairs);
+					logger.info("Paired clients " + c1.toString() + " and " + c2.toString());
+					Thread pairThread = new Thread(new PairRunnable(c1, c2), "PairThread#" + pairs++);
 					pairThread.start();
-					pairs++;
 				}
 			}
 		}
 	}
-
-	private class PairRunnable implements Runnable {
-		private Client server, client;
-
-		private PairRunnable(Client c1, Client c2) {
-			server = c1;
-			client = c2;
+	
+	/*
+	 * Runnable object to do the pairing of two remote clients
+	 */
+	private class PairRunnable implements Runnable{
+		private Remote listener, caller;
+		
+		private PairRunnable(Remote listener, Remote caller){
+			this.listener = listener;
+			this.caller = caller;
 		}
-
+		
 		@Override
-		public void run() {
-			// The configuration used by the serving-client
-			RemoteClientConfiguration serverConfig;
-			try {
-				int port;
-				server.out.println("LISTEN");
-				client.out.println("CALL");
-				port = Integer.parseInt(server.in.readLine());
-				serverConfig = new RemoteClientConfiguration(server.getInetAddress().getHostAddress(), port);
-				client.out.println(serverConfig.toString());
-			} catch (NumberFormatException nfe) {
-				// the server failed at it's job, so we close the server
-				// connection, and put the client back in the queue
-				server.close();
-				clients.add(client);
-				throw new RuntimeException(nfe);
-			} catch (Exception e) {
+		public void run(){
+			int port;
+			Host host;
+			try{
+				// send the two remote clients their respective modes
+				listener.out.println("LISTEN");
+				caller.out.println("CALL");
+				// get the port from the listener
+				port = Integer.parseInt(listener.in.readLine());
+				logger.info("got port " + port + " from listener");
+				// place the listeners port and the listeners address into a new host configuration
+				host = new Host(listener.getAddress(), port);
+				// send the new host configuration to the caller
+				caller.out.println(host.toString());
+			}
+			catch(NumberFormatException nfe){
+				// the listener had some sort of major failure
+				listener.close();
+				clients.add(caller);
+			}
+			catch(Exception e){
 				throw new RuntimeException(e);
-			} finally {
-				client.close();
-				server.close();
+			}
+			finally{
+				caller.close();
+				listener.close();
 			}
 		}
 	}
@@ -152,7 +108,7 @@ public class Server implements AutoCloseable {
 		}
 	}
 
-	private Queue<Client>				clients	= new ConcurrentLinkedQueue<>();
+	private Queue<Remote>				clients	= new ConcurrentLinkedQueue<>();
 
 	/*
 	 * The configuration being used by the server
@@ -170,7 +126,7 @@ public class Server implements AutoCloseable {
 
 	public final Logger					logger	= new Logger(System.out);
 
-	/**
+	/*
 	 * The tasks runnable from the REPL
 	 */
 	private Map<String, Task>			tasks	= new HashMap<>();
@@ -207,7 +163,7 @@ public class Server implements AutoCloseable {
 		return running;
 	}
 
-	/**
+	/*
 	 * Start the Server's threads, and then launch an interactive REPL
 	 */
 	public void run() {
@@ -228,7 +184,7 @@ public class Server implements AutoCloseable {
 								.map((entry) -> entry.getKey() + "\t" + entry.getValue().helpString)
 								.reduce((a, b) -> a + "\n" + b).get()));
 		tasks.put("stop", new Task("stop the server politely", this::stop));
-		tasks.put("list", new Task("list the currently waiting clients", () -> clients.stream().map(Client::toString)
+		tasks.put("list", new Task("list the currently waiting clients", () -> clients.stream().map(Remote::toString)
 				.reduce((a, b) -> a + "\n" + b).orElse("No clients are connected")));
 		try (Scanner scan = new Scanner(System.in)) {
 			scan.useDelimiter(System.lineSeparator());

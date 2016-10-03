@@ -4,6 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
 
+/*
+ * Configuration options for a server
+ */
 public class ServerConfiguration {
 	private static final Gson				gson	= new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
 

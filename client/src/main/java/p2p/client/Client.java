@@ -8,7 +8,9 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Supplier;
 
+import p2p.common.Host;
 import p2p.common.Logger;
+import p2p.common.Remote;
 
 public class Client extends Thread implements AutoCloseable {
 	protected class ListenThread extends Thread {
@@ -18,8 +20,16 @@ public class Client extends Thread implements AutoCloseable {
 
 		@Override
 		public void run() {
-			// TODO listen for messages from foreignclient, adding lines as they
+			// listen for messages from foreignclient, adding lines as they
 			// come to incomingMessages
+			while(isRunning()){
+				try {
+					String line = foreignClient.in.readLine();
+					incomingMessages.add(line);
+				} catch (IOException e) {
+					incomingMessages.add(e.getMessage());
+				}				
+			}
 		}
 	}
 
@@ -30,8 +40,14 @@ public class Client extends Thread implements AutoCloseable {
 
 		@Override
 		public void run() {
-			// TODO go through the outgoingmessages sending them to
+			// go through the outgoingmessages sending them to
 			// foreighClient as they go
+			while(isRunning()){
+				while(!outgoingMessages.isEmpty()){
+					String line = outgoingMessages.remove();
+					foreignClient.out.println(line);
+				}
+			}
 		}
 	}
 
@@ -39,15 +55,24 @@ public class Client extends Thread implements AutoCloseable {
 
 		@Override
 		public void close() {
-			// TODO Auto-generated method stub
+			// stub
 		}
 
 		@Override
 		public Remote get() {
-			// TODO needs to wait for the server to send it a line with the
+			// needs to wait for the server to send it a line with the
 			// RemoteInfo in it, and then connect to that remote, returning a
 			// Remote object from the socket
-			return null;
+			try {
+				String line = Client.this.server.in.readLine();
+				Host host = Host.fromJson(line);
+				return new Remote(host);
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+			catch(RuntimeException re){
+				throw re;
+			}
 		}
 	}
 
@@ -94,11 +119,25 @@ public class Client extends Thread implements AutoCloseable {
 
 	public final Thread				listenThread		= new ListenThread(), sendThread = new SendThread();
 
-	protected final Queue<String>	incomingMessages	= new ConcurrentLinkedQueue<>();
+	private final Queue<String>	incomingMessages	= new ConcurrentLinkedQueue<>();
 
-	protected final Queue<String>	outgoingMessages	= new ConcurrentLinkedQueue<>();
+	private final Queue<String>	outgoingMessages	= new ConcurrentLinkedQueue<>();
+	
+	public void sendMessage(String msg){
+		if(msg == null)
+			return;
+		else
+			outgoingMessages.add(msg);
+	}
+	
+	public String getMessage(String msg){
+		if(incomingMessages.isEmpty())
+			return null;
+		else
+			return incomingMessages.remove();
+	}
 
-	public final ServerInfo			serverInfo;
+	public final Host			serverInfo;
 
 	public final Logger				logger				= new Logger(System.out);
 
@@ -106,7 +145,7 @@ public class Client extends Thread implements AutoCloseable {
 
 	private Remote					server				= null, foreignClient = null;
 
-	public Client(ServerInfo serverInfo, UncaughtExceptionHandler exceptionHandler) {
+	public Client(Host serverInfo, UncaughtExceptionHandler exceptionHandler) {
 		this.serverInfo = serverInfo;
 		setName("ClientThread");
 		setUncaughtExceptionHandler(exceptionHandler);
@@ -146,6 +185,7 @@ public class Client extends Thread implements AutoCloseable {
 				throw new RuntimeException("Invalid mode string from server");
 			}
 			foreignClient = remoteHandler.get();
+			logger.info("Got foreign client connection" + foreignClient.toString());
 		} catch (IOException ioe) {
 			throw new RuntimeException(ioe);
 		} finally {
