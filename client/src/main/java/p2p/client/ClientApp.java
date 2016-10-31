@@ -1,82 +1,107 @@
 package p2p.client;
 
-import p2p.common.Host;
+import java.awt.EventQueue;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
-import static javax.swing.JOptionPane.showConfirmDialog;
-
-import java.awt.BorderLayout;
-import java.awt.GridLayout;
-import java.lang.Thread.UncaughtExceptionHandler;
-
-import javax.swing.JComponent;
+import javax.swing.JButton;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.JTextPane;
 
 public class ClientApp {
-	public class ExceptionHandler implements UncaughtExceptionHandler{
+
+	private class Message {
+		/*
+		 * If it's remote or local
+		 */
+		private boolean	remote;
+
+		private String	txt;
+
+		private Message(String txt, boolean remote) {
+			this.txt = txt;
+			this.remote = remote;
+		}
+
 		@Override
-		public void uncaughtException(Thread t, Throwable e) {
-			String msg = "Error in Thread " + t.getName() + ": " + e.getMessage() + "\nConsult log for stacktrace";
-			JOptionPane.showMessageDialog(window, msg, "Critical Error", JOptionPane.ERROR_MESSAGE);
+		public String toString() {
+			// extra spaces to align
+			return (remote ? "[REMOTE] " : "[LOCAL]  ") + txt;
 		}
 	}
-	
-	public void run(){
-		client = new Client(getServer(), exceptionHandler);
-		// TODO create a gui with an input text field, and a field to display messages
-	}
-	
-	public ClientApp(){
-		Thread.currentThread().setUncaughtExceptionHandler(exceptionHandler);
-	}
-	
-	private UncaughtExceptionHandler exceptionHandler = new ExceptionHandler();
-	
-	private JFrame window = null;
-	private Client client;
-	
-	private Host server;
-	
-	public Host getServer(){
-		JTextArea hostnameTextArea, portTextArea;
-		JPanel portPanel, hostnamePanel, inputPanel;
-		int port;
-		String address;
-		if(server == null){
-			hostnameTextArea = new JTextArea();
-			portTextArea = new JTextArea();
-			
-			portPanel = new JPanel(new BorderLayout());
-			portPanel.add(new JLabel("Port #: "), BorderLayout.NORTH);
-			portPanel.add(portTextArea, BorderLayout.CENTER);
-			
-			hostnamePanel = new JPanel(new BorderLayout());
-			hostnamePanel.add(new JLabel("Hostname: "), BorderLayout.NORTH);
-			hostnamePanel.add(hostnameTextArea, BorderLayout.CENTER);
-			
-			inputPanel = new JPanel(new GridLayout());
-			inputPanel.add(hostnamePanel);
-			inputPanel.add(portPanel);
-			
-			JOptionPane.showMessageDialog(window, inputPanel);
-			try{
-				port = Integer.parseInt(portTextArea.getText());
+
+	/**
+	 * Launch the application.
+	 */
+	public static void main(String[] args) {
+		EventQueue.invokeLater(() -> {
+			try {
+				ClientApp window = new ClientApp();
+				window.frmClient.setVisible(true);
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
-			catch(NumberFormatException nfe){
-				JOptionPane.showMessageDialog(window, "Invalid input for port", "Error!", JOptionPane.ERROR_MESSAGE);
-				throw nfe;
-			}
-			address = hostnameTextArea.getText();
-			server = new Host(address, port);
-		}
-		return server;
+		});
 	}
-	
-	public static void main(String[] args){
-		ClientApp clientApp = new ClientApp();
-		clientApp.run();
+
+	private JFrame							frmClient;
+
+	private JTextField						textField;
+
+	private Client							client;
+
+	private ConcurrentLinkedQueue<Message>	history	= new ConcurrentLinkedQueue<>();
+
+	private JTextPane						textPane;
+
+	/**
+	 * Create the application.
+	 */
+	public ClientApp() {
+		initialize();
+	}
+
+	private void enterText() {
+		String text = textField.getText();
+		// check if text is empty
+		if (text.isEmpty())
+			return;
+		// send our message through the client
+		client.sendMessage(text);
+		// add our message to our history
+		history.add(new Message(text, false));
+		// clear the text field
+		textPane.setText("");
+	}
+
+	/**
+	 * Initialize the contents of the frame.
+	 */
+	private void initialize() {
+		frmClient = new JFrame();
+		frmClient.setTitle("Client");
+		frmClient.setResizable(false);
+		frmClient.setBounds(100, 100, 450, 300);
+		frmClient.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frmClient.getContentPane().setLayout(null);
+
+		JButton btnEnter = new JButton("Enter");
+		btnEnter.addActionListener((event) -> enterText());
+		btnEnter.setBounds(364, 238, 72, 25);
+		frmClient.getContentPane().add(btnEnter);
+
+		textField = new JTextField();
+		textField.addActionListener((event) -> enterText());
+		textField.setBounds(12, 240, 340, 22);
+		frmClient.getContentPane().add(textField);
+		textField.setColumns(10);
+
+		textPane = new JTextPane();
+		textPane.setEditable(false);
+		textPane.setBounds(12, 12, 424, 214);
+		frmClient.getContentPane().add(textPane);
 	}
 }

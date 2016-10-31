@@ -5,14 +5,17 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
 
 /**
- * Container class for a host configuration, using Gson for serialization and deserialization
+ * Container class for a host configuration, using Gson for serialization and
+ * deserialization
  */
 public final class Host {
 	private static final Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
 
 	/**
 	 * parse a JSON to a host object
-	 * @param json the JSON string
+	 * 
+	 * @param json
+	 *            the JSON string
 	 * @return the Host object
 	 */
 	public static Host fromJson(String json) {
@@ -33,6 +36,7 @@ public final class Host {
 
 	/**
 	 * Construct a host from a given host address and port
+	 * 
 	 * @param host
 	 * @param port
 	 */

@@ -36,8 +36,10 @@ public class Server implements AutoCloseable {
 	}
 
 	/*
-	 * Runnable object to perform matches
-	 * Only one of these should be run at a given time, it counts the number of pairs, and it creates the PairRunnables with the two pairs once there are 2 or more remotes waiting around
+	 * Runnable object to perform matches Only one of these should be run at a
+	 * given time, it counts the number of pairs, and it creates the
+	 * PairRunnables with the two pairs once there are 2 or more remotes waiting
+	 * around
 	 */
 	private class MatchRunnable implements Runnable {
 		@Override
@@ -56,43 +58,41 @@ public class Server implements AutoCloseable {
 			}
 		}
 	}
-	
+
 	/*
 	 * Runnable object to do the pairing of two remote clients
 	 */
-	private class PairRunnable implements Runnable{
+	private class PairRunnable implements Runnable {
 		private Remote listener, caller;
-		
-		private PairRunnable(Remote listener, Remote caller){
+
+		private PairRunnable(Remote listener, Remote caller) {
 			this.listener = listener;
 			this.caller = caller;
 		}
-		
+
 		@Override
-		public void run(){
+		public void run() {
 			int port;
 			Host host;
-			try{
+			try {
 				// send the two remote clients their respective modes
 				listener.out.println("LISTEN");
 				caller.out.println("CALL");
 				// get the port from the listener
 				port = Integer.parseInt(listener.in.readLine());
 				logger.info("got port " + port + " from listener");
-				// place the listeners port and the listeners address into a new host configuration
+				// place the listeners port and the listeners address into a new
+				// host configuration
 				host = new Host(listener.getAddress(), port);
 				// send the new host configuration to the caller
 				caller.out.println(host.toString());
-			}
-			catch(NumberFormatException nfe){
+			} catch (NumberFormatException nfe) {
 				// the listener had some sort of major failure
 				listener.close();
 				clients.add(caller);
-			}
-			catch(Exception e){
+			} catch (Exception e) {
 				throw new RuntimeException(e);
-			}
-			finally{
+			} finally {
 				caller.close();
 				listener.close();
 			}

@@ -22,13 +22,13 @@ public class Client extends Thread implements AutoCloseable {
 		public void run() {
 			// listen for messages from foreignclient, adding lines as they
 			// come to incomingMessages
-			while(isRunning()){
+			while (isRunning()) {
 				try {
 					String line = foreignClient.in.readLine();
 					incomingMessages.add(line);
 				} catch (IOException e) {
 					incomingMessages.add(e.getMessage());
-				}				
+				}
 			}
 		}
 	}
@@ -42,8 +42,8 @@ public class Client extends Thread implements AutoCloseable {
 		public void run() {
 			// go through the outgoingmessages sending them to
 			// foreighClient as they go
-			while(isRunning()){
-				while(!outgoingMessages.isEmpty()){
+			while (isRunning()) {
+				while (!outgoingMessages.isEmpty()) {
 					String line = outgoingMessages.remove();
 					foreignClient.out.println(line);
 				}
@@ -64,13 +64,12 @@ public class Client extends Thread implements AutoCloseable {
 			// RemoteInfo in it, and then connect to that remote, returning a
 			// Remote object from the socket
 			try {
-				String line = Client.this.server.in.readLine();
+				String line = server.in.readLine();
 				Host host = Host.fromJson(line);
 				return new Remote(host);
 			} catch (IOException e) {
 				throw new RuntimeException(e);
-			}
-			catch(RuntimeException re){
+			} catch (RuntimeException re) {
 				throw re;
 			}
 		}
@@ -117,33 +116,19 @@ public class Client extends Thread implements AutoCloseable {
 		}
 	}
 
-	public final Thread				listenThread		= new ListenThread(), sendThread = new SendThread();
+	public final Thread			listenThread		= new ListenThread(), sendThread = new SendThread();
 
 	private final Queue<String>	incomingMessages	= new ConcurrentLinkedQueue<>();
 
 	private final Queue<String>	outgoingMessages	= new ConcurrentLinkedQueue<>();
-	
-	public void sendMessage(String msg){
-		if(msg == null)
-			return;
-		else
-			outgoingMessages.add(msg);
-	}
-	
-	public String getMessage(String msg){
-		if(incomingMessages.isEmpty())
-			return null;
-		else
-			return incomingMessages.remove();
-	}
 
 	public final Host			serverInfo;
 
-	public final Logger				logger				= new Logger(System.out);
+	public final Logger			logger				= new Logger(System.out);
 
-	private boolean					running				= true;
+	private boolean				running				= true;
 
-	private Remote					server				= null, foreignClient = null;
+	private Remote				server				= null, foreignClient = null;
 
 	public Client(Host serverInfo, UncaughtExceptionHandler exceptionHandler) {
 		this.serverInfo = serverInfo;
@@ -154,6 +139,13 @@ public class Client extends Thread implements AutoCloseable {
 	@Override
 	public void close() {
 
+	}
+
+	public String getMessage(String msg) {
+		if (incomingMessages.isEmpty())
+			return null;
+		else
+			return incomingMessages.remove();
 	}
 
 	public boolean isRunning() {
@@ -196,6 +188,14 @@ public class Client extends Thread implements AutoCloseable {
 		// start delegate threads TODO
 		sendThread.start();
 		listenThread.start();
+	}
+
+	public void sendMessage(String msg) {
+		if (msg == null)
+			return;
+		else {
+			outgoingMessages.add(msg);
+		}
 	}
 
 	@Override
