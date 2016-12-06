@@ -1,96 +1,44 @@
 package p2p.common;
 
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
-import java.net.Socket;
-import java.net.UnknownHostException;
+import java.util.StringTokenizer;
 
 /**
- * Wrapper class for a remote system, using a simple socket, from a given
- * host-port configuration
+ * Container class for a remote configuration
  */
-public class Remote implements AutoCloseable {
-	private Socket				socket	= null;
+public final class Remote {
 
 	/**
-	 * Input from the remote
+	 * A string of a Remote, the ip and the port, separated by a space
+	 * @param string
 	 */
-	public final BufferedReader	in;
+	public Remote(String string){
+		StringTokenizer st = new StringTokenizer(string);
+		host = st.nextToken();
+		port = Integer.parseInt(st.nextToken());
+	}
 
 	/**
-	 * Output to the remote
+	 * The host address
 	 */
-	public final PrintStream	out;
-
-	private Host				host	= null;
+	public final String		host;
 
 	/**
-	 * Connect to a given host, opening a socket on a given Host configuration
+	 * the hosts port
+	 */
+	public final Integer	port;
+
+	/**
+	 * Construct a host from a given host address and port
 	 * 
-	 * @param info
-	 *            the host configuration
-	 * @throws UnknownHostException
-	 *             if the host is not found
-	 * @throws IOException
-	 *             if there's another IO error
+	 * @param host
+	 * @param port
 	 */
-	public Remote(Host info) throws UnknownHostException, IOException {
-		this(new Socket(info.host, info.port));
-		host = info;
+	public Remote(String host, Integer port) {
+		this.host = host;
+		this.port = port;
 	}
-
-	/**
-	 * Connect to a socket
-	 * 
-	 * @param socket
-	 *            the socket
-	 * @throws IOException
-	 *             if there's another IO error
-	 */
-	public Remote(Socket socket) throws IOException {
-		this.socket = socket;
-		in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-		out = new PrintStream(new DataOutputStream(socket.getOutputStream()));
-	}
-
-	public Remote(String hostname, int port) throws UnknownHostException, IOException {
-		this(new Host(hostname, port));
-	}
-
-
-	@Override
-	public void close() {
-		try {
-			if (socket != null) {
-				socket.close();
-			}
-		} catch (IOException ioe) {
-			// suppress the exception if we're already closed
-			if (!socket.isClosed())
-				throw new RuntimeException(ioe);
-		}
-	}
-
-	public String getAddress() {
-		return socket.getInetAddress().getHostAddress();
-	}
-
-	public Host getHost() {
-		if (host != null)
-			return host;
-		else
-			return host = new Host(getAddress(), getPort());
-	}
-
-	public int getPort() {
-		return socket.getPort();
-	}
-
-	@Override
-	public String toString() {
-		return "{" + getAddress() + ":" + getPort() + "}";
+	
+	public String toString(){
+		return host + " " + port;
 	}
 }

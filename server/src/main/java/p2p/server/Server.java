@@ -9,22 +9,21 @@ import java.util.Queue;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import p2p.common.Host;
 import p2p.common.Logger;
 import p2p.common.Remote;
-import p2p.server.task.Task;
+import p2p.common.RemoteConnection;
 
 public class Server implements AutoCloseable {
 
 	private class ListenRunnable implements Runnable {
 		@Override
 		public void run() {
-			Remote client;
+			RemoteConnection client;
 			Socket socket;
 			while (isRunning()) {
 				try {
 					socket = Server.this.socket.accept();
-					client = new Remote(socket);
+					client = new RemoteConnection(socket);
 				} catch (IOException se) {
 					throw new RuntimeException(se);
 				}
@@ -45,7 +44,7 @@ public class Server implements AutoCloseable {
 		@Override
 		public void run() {
 			logger.info("MatchRunnable is running");
-			Remote c1, c2;
+			RemoteConnection c1, c2;
 			int pairs = 0;
 			while (isRunning()) {
 				if (clients.size() >= 2) {
@@ -63,9 +62,9 @@ public class Server implements AutoCloseable {
 	 * Runnable object to do the pairing of two remote clients
 	 */
 	private class PairRunnable implements Runnable {
-		private Remote listener, caller;
+		private RemoteConnection listener, caller;
 
-		private PairRunnable(Remote listener, Remote caller) {
+		private PairRunnable(RemoteConnection listener, RemoteConnection caller) {
 			this.listener = listener;
 			this.caller = caller;
 		}
@@ -73,7 +72,7 @@ public class Server implements AutoCloseable {
 		@Override
 		public void run() {
 			int port;
-			Host host;
+			Remote host;
 			try {
 				// send the two remote clients their respective modes
 				listener.out.println("LISTEN");
@@ -83,7 +82,7 @@ public class Server implements AutoCloseable {
 				logger.info("got port " + port + " from listener");
 				// place the listeners port and the listeners address into a new
 				// host configuration
-				host = new Host(listener.getAddress(), port);
+				host = new Remote(listener.getAddress(), port);
 				// send the new host configuration to the caller
 				caller.out.println(host.toString());
 			} catch (NumberFormatException nfe) {
@@ -108,7 +107,7 @@ public class Server implements AutoCloseable {
 		}
 	}
 
-	private Queue<Remote>				clients	= new ConcurrentLinkedQueue<>();
+	private Queue<RemoteConnection>				clients	= new ConcurrentLinkedQueue<>();
 
 	/*
 	 * The configuration being used by the server
@@ -184,8 +183,9 @@ public class Server implements AutoCloseable {
 								.map((entry) -> entry.getKey() + "\t" + entry.getValue().helpString)
 								.reduce((a, b) -> a + "\n" + b).get()));
 		tasks.put("stop", new Task("stop the server politely", this::stop));
-		tasks.put("list", new Task("list the currently waiting clients", () -> clients.stream().map(Remote::toString)
+		tasks.put("list", new Task("list the currently waiting clients", () -> clients.stream().map(RemoteConnection::toString)
 				.reduce((a, b) -> a + "\n" + b).orElse("No clients are connected")));
+		tasks.put("port", new Task("print the port", ()->new Integer(config.port).toString()));
 		try (Scanner scan = new Scanner(System.in)) {
 			scan.useDelimiter(System.lineSeparator());
 			System.out.println(

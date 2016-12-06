@@ -10,7 +10,7 @@ subprojects{
 	}
 
 	dependencies {
-		compile group: 'com.google.code.gson', name: 'gson', version: '2.7' 
+		//compile group: 'com.google.code.gson', name: 'gson', version: '2.7' 
 	}
 
 }
@@ -28,7 +28,7 @@ configure(subprojects.findAll{it.name != 'common'}){
 }
 
 project(':client'){
-	mainClassName='p2p.client.SimpleClient'
+	mainClassName='p2p.client.ClientApp'
 }
 
 project(':server'){
