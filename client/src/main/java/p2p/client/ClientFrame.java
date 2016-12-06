@@ -2,16 +2,10 @@ package p2p.client;
 
 import java.awt.BorderLayout;
 import java.awt.Container;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.List;
 
 import javax.swing.JFrame;
-import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
-
-import p2p.common.Remote;
 
 public class ClientFrame extends JFrame  {
 	private static final long serialVersionUID = -8093297606128388287L;
@@ -32,7 +26,7 @@ public class ClientFrame extends JFrame  {
 		textArea.setEditable(false);
 		textArea.setColumns(40);
 		textArea.setRows(10);
-		textArea.setText("Hi");
+		textArea.setText("");
 		cont.add(textArea, BorderLayout.CENTER);
 
 		textField = new JTextField();
@@ -45,7 +39,7 @@ public class ClientFrame extends JFrame  {
 		setResizable(false);
 		this.setSize(400, 400);
 		
-		this.setTitle("ClientFrame");
+		this.setTitle("Client Frame");
 		
 		textField.addActionListener((event)->{
 			String message = textField.getText();

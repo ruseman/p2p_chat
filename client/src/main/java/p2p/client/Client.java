@@ -92,11 +92,8 @@ public class Client extends Thread implements AutoCloseable {
 		}
 	}
 
-	private interface RemoteHandler extends Supplier<RemoteConnection>, Closeable {
-		@Override
-		public default void close() {
-		}
-	}
+	private interface RemoteHandler extends Supplier<RemoteConnection>, Closeable {@Override public default void close() {}}
+	
 
 	private class RemoteListener implements RemoteHandler {
 		private ServerSocket	listen;
