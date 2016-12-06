@@ -91,6 +91,10 @@ public class Client extends Thread implements AutoCloseable {
 			}
 		}
 	}
+	
+	public boolean hasForeignClient(){
+		return foreignClient != null;
+	}
 
 	private interface RemoteHandler extends Supplier<RemoteConnection>, Closeable {@Override public default void close() {}}
 	
@@ -142,7 +146,7 @@ public class Client extends Thread implements AutoCloseable {
 
 	private RemoteConnection							server			= null;
 
-	private RemoteConnection							foreignClient	= null;
+	private volatile RemoteConnection							foreignClient	= null;
 	private final Remote						tracker;
 
 	private final UncaughtExceptionHandler	handler;

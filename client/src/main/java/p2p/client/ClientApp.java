@@ -8,7 +8,6 @@ public class ClientApp {
 		TrackerQueryFrame tqf;
 		Client client;
 		ClientFrame cframe;
-		WaitingFrame wframe;
 		
 		tqf = new TrackerQueryFrame();
 		tracker = tqf.get();
