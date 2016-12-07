@@ -33,6 +33,7 @@ public class ClientFrame extends JFrame  {
 		scrollPane = new JScrollPane(textArea);
 		scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 		scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+	
 		cont.add(scrollPane, BorderLayout.CENTER);
 
 		textField = new JTextField();
@@ -47,6 +48,8 @@ public class ClientFrame extends JFrame  {
 		this.pack();
 		
 		this.setTitle("Client Frame");
+		this.setLocationRelativeTo(null);
+	
 		
 		textField.addActionListener((event)->{
 			String message = textField.getText();
@@ -61,13 +64,19 @@ public class ClientFrame extends JFrame  {
 	
 	private Thread printThread = new Thread(){
 		public void run(){
+			String oldtext, newtext;
 			while (true){
-				textArea.setText(client.getHist().stream().map(
+				oldtext = textArea.getText();
+				newtext = (client.getHist().stream().map(
 						(m)->m.text == null ? null :
 							(m.side == Message.Side.LOCAL ? "LOCAL:  " + m.text :
 							(m.side == Message.Side.REMOTE ? "REMOTE: " + m.text : 
 								"ERROR:  " + m.text))).reduce(
 								(a, b)->b != null ? a + "\n" + b : a).orElse(ready ? "Start talking!" : "Waiting..."));
+				textArea.setText(newtext);
+				if(!newtext.equals(oldtext))
+					textArea.setCaretPosition(textArea.getDocument().getLength());
+				
 			}
 		}
 	};
