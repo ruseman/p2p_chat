@@ -19,7 +19,7 @@ public final class Remote {
 
 	/**
 	 * A string of a Remote, the ip and the port, separated by a space
-	 * 
+	 *
 	 * @param string
 	 */
 	public Remote(String string) {
