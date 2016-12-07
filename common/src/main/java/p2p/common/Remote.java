@@ -8,16 +8,6 @@ import java.util.StringTokenizer;
 public final class Remote {
 
 	/**
-	 * A string of a Remote, the ip and the port, separated by a space
-	 * @param string
-	 */
-	public Remote(String string){
-		StringTokenizer st = new StringTokenizer(string);
-		host = st.nextToken();
-		port = Integer.parseInt(st.nextToken());
-	}
-
-	/**
 	 * The host address
 	 */
 	public final String		host;
@@ -28,8 +18,19 @@ public final class Remote {
 	public final Integer	port;
 
 	/**
-	 * Construct a host from a given host address and port
+	 * A string of a Remote, the ip and the port, separated by a space
 	 * 
+	 * @param string
+	 */
+	public Remote(String string) {
+		StringTokenizer st = new StringTokenizer(string);
+		host = st.nextToken();
+		port = Integer.parseInt(st.nextToken());
+	}
+
+	/**
+	 * Construct a host from a given host address and port
+	 *
 	 * @param host
 	 * @param port
 	 */
@@ -37,8 +38,9 @@ public final class Remote {
 		this.host = host;
 		this.port = port;
 	}
-	
-	public String toString(){
+
+	@Override
+	public String toString() {
 		return host + " " + port;
 	}
 }

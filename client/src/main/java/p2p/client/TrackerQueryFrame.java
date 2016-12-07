@@ -13,7 +13,6 @@ import javax.swing.SwingConstants;
 
 import p2p.common.Remote;
 
-
 public class TrackerQueryFrame extends JFrame implements Supplier<Remote> {
 	private enum State {
 		OKAY, QUIT, WAIT;

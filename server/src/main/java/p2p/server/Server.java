@@ -107,7 +107,7 @@ public class Server implements AutoCloseable {
 		}
 	}
 
-	private Queue<RemoteConnection>				clients	= new ConcurrentLinkedQueue<>();
+	private Queue<RemoteConnection>		clients	= new ConcurrentLinkedQueue<>();
 
 	/*
 	 * The configuration being used by the server
@@ -183,9 +183,9 @@ public class Server implements AutoCloseable {
 								.map((entry) -> entry.getKey() + "\t" + entry.getValue().helpString)
 								.reduce((a, b) -> a + "\n" + b).get()));
 		tasks.put("stop", new Task("stop the server politely", this::stop));
-		tasks.put("list", new Task("list the currently waiting clients", () -> clients.stream().map(RemoteConnection::toString)
-				.reduce((a, b) -> a + "\n" + b).orElse("No clients are connected")));
-		tasks.put("port", new Task("print the port", ()->new Integer(config.port).toString()));
+		tasks.put("list", new Task("list the currently waiting clients", () -> clients.stream()
+				.map(RemoteConnection::toString).reduce((a, b) -> a + "\n" + b).orElse("No clients are connected")));
+		tasks.put("port", new Task("print the port", () -> new Integer(config.port).toString()));
 		try (Scanner scan = new Scanner(System.in)) {
 			scan.useDelimiter(System.lineSeparator());
 			System.out.println(

@@ -29,7 +29,7 @@ public class RemoteConnection implements AutoCloseable {
 
 	/**
 	 * Connect to a given host, opening a socket on a given Host configuration
-	 * 
+	 *
 	 * @param info
 	 *            the host configuration
 	 * @throws UnknownHostException
@@ -44,7 +44,7 @@ public class RemoteConnection implements AutoCloseable {
 
 	/**
 	 * Connect to a socket
-	 * 
+	 *
 	 * @param socket
 	 *            the socket
 	 * @throws IOException
@@ -59,7 +59,6 @@ public class RemoteConnection implements AutoCloseable {
 	public RemoteConnection(String hostname, int port) throws UnknownHostException, IOException {
 		this(new Remote(hostname, port));
 	}
-
 
 	@Override
 	public void close() {
@@ -77,10 +76,6 @@ public class RemoteConnection implements AutoCloseable {
 	public String getAddress() {
 		return socket.getInetAddress().getHostAddress();
 	}
-	
-	public Socket getSocket(){
-		return socket;
-	}
 
 	public Remote getHost() {
 		if (host != null)
@@ -91,6 +86,10 @@ public class RemoteConnection implements AutoCloseable {
 
 	public int getPort() {
 		return socket.getPort();
+	}
+
+	public Socket getSocket() {
+		return socket;
 	}
 
 	@Override

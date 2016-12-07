@@ -1,25 +1,26 @@
 package p2p.server;
 
-import java.io.OutputStream;
-import java.io.PrintStream;
 import java.util.function.Supplier;
 
 /**
- * This is a Task class for the REPL, essentially a runnable object and a helpstring
+ * This is a Task class for the REPL, essentially a runnable object and a
+ * helpstring
  */
 public class Task implements Runnable {
 	/**
 	 * The help string
 	 */
 	public final String		helpString;
-	
+
 	/**
 	 * The runnable object
 	 */
 	private final Runnable	runnable;
 
 	/**
-	 * Construct a new Task object, from a given helpstring and a runnable object
+	 * Construct a new Task object, from a given helpstring and a runnable
+	 * object
+	 *
 	 * @param helpString
 	 * @param runnable
 	 */
@@ -27,9 +28,11 @@ public class Task implements Runnable {
 		this.helpString = helpString;
 		this.runnable = runnable;
 	}
-	
+
 	/**
-	 * Construct a new Task object, from a given helpstring and a supplier object
+	 * Construct a new Task object, from a given helpstring and a supplier
+	 * object
+	 *
 	 * @param helpString
 	 * @param supplier
 	 */

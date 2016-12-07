@@ -4,17 +4,15 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
 
-import p2p.common.RemoteConnection;
 import p2p.common.Logger;
 import p2p.common.Remote;
+import p2p.common.RemoteConnection;
 
 public class Client extends Thread implements AutoCloseable {
 	/*
@@ -91,17 +89,16 @@ public class Client extends Thread implements AutoCloseable {
 			}
 		}
 	}
-	
-	public boolean hasForeignClient(){
-		return foreignClient != null;
+
+	private interface RemoteHandler extends Supplier<RemoteConnection>, Closeable {
+		@Override
+		public default void close() {
+		}
 	}
 
-	private interface RemoteHandler extends Supplier<RemoteConnection>, Closeable {@Override public default void close() {}}
-	
-
 	private class RemoteListener implements RemoteHandler {
-		private ServerSocket	listen;
-		private RemoteConnection			server;
+		private ServerSocket		listen;
+		private RemoteConnection	server;
 
 		private RemoteListener(RemoteConnection server) {
 			this.server = server;
@@ -144,11 +141,11 @@ public class Client extends Thread implements AutoCloseable {
 
 	private volatile boolean				ready			= false;
 
-	private RemoteConnection							server			= null;
+	private RemoteConnection				server			= null;
 
-	private volatile RemoteConnection							foreignClient	= null;
-	private final Remote						tracker;
+	private volatile RemoteConnection		foreignClient	= null;
 
+	private final Remote					tracker;
 	private final UncaughtExceptionHandler	handler;
 
 	/*
@@ -192,6 +189,10 @@ public class Client extends Thread implements AutoCloseable {
 	 */
 	public List<Message> getHist() {
 		return hist;
+	}
+
+	public boolean hasForeignClient() {
+		return foreignClient != null;
 	}
 
 	public boolean ready() {

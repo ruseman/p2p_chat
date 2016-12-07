@@ -8,16 +8,16 @@ public class ClientApp {
 		TrackerQueryFrame tqf;
 		Client client;
 		ClientFrame cframe;
-		
+
 		tqf = new TrackerQueryFrame();
 		tracker = tqf.get();
 
-		
 		client = new Client(tracker);
-		//wframe = new WaitingFrame(() -> client.ready(), () -> System.out.println("Cancel"),
-		//		() -> System.out.println("Finish"));
+		// wframe = new WaitingFrame(() -> client.ready(), () ->
+		// System.out.println("Cancel"),
+		// () -> System.out.println("Finish"));
 		client.start();
-		//wframe.start();
+		// wframe.start();
 		cframe = new ClientFrame(client);
 		cframe.setVisible(true);
 	}
